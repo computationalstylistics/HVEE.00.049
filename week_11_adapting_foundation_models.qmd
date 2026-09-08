@@ -1,0 +1,555 @@
+---
+title: "Adapting Models through Fine-Tuning"
+subtitle: "Gentle Introduction to AI (HVEE.00.049) -- Week 11"
+author: 
+    name: Maciej Eder
+    affiliation: University of Tartu | Polish Academy of Sciences
+date: 2026/09/08
+format: 
+  revealjs:
+    theme: pp.scss
+    logo: DigiTS-RGB-short-SMALL.svg
+    css: big_logo_DigiTS.css
+    self_contained: false
+---
+
+# How Do We Adapt a General-Purpose Language Model to a Specialized Scholarly Task?
+
+---
+
+# The Adaptation Spectrum
+
+## The central question
+
+> If I want an expert on Estonian literary criticism, what is the cheapest solution?
+
+This question bridges to things students already understand:
+
+* adapting a general theory to a specific corpus
+* training human annotators
+* specialization within a discipline
+
+## The adaptation spectrum
+
+As adaptation increases, specificity increases but cost increases:
+
+```
+General model
+     |
+     +-- Prompting (zero cost, high variability)
+     |
+     +-- Few-shot prompting (low cost, moderate stability)
+     |
+     +-- RAG (no model change, external knowledge)
+     |
+     +-- Fine-tuning (moderate cost, permanent change)
+     |
+     +-- Continued pretraining (high cost, domain shift)
+```
+
+## Trade-offs to consider
+
+| Factor | Prompting | RAG | Fine-Tuning | Continued Pretraining |
+|----|----|----|----|----|
+| Cost | None | Low | Moderate | High |
+| Permanence | None | None | Permanent | Permanent |
+| Privacy | Low | Medium | High | High |
+| Reproducibility | Variable | High | High | High |
+| Domain fit | Shallow | Surface | Deep | Deepest |
+
+---
+
+# When NOT to Fine-Tune
+
+## The most important lesson
+
+Many students assume:
+
+> Fine-tuning = making the model better.
+
+In reality, **fine-tuning is often the wrong tool** forDH problems that could be solved more effectively by:
+
+* better prompts
+* RAG
+* larger context windows
+
+## Before you fine-tune, ask
+
+| Question | If yes | If no |
+|----|----|----|
+| Does a better prompt solve it? | Use prompting | Fine-tune |
+| Is the issue lacking knowledge? | Use RAG | Fine-tune |
+| Is the issue lacking pattern recognition? | Fine-tune | -- |
+| Do you need this pattern consistently? | Fine-tune | Use prompting |
+
+## The "prompt first" rule
+
+1. **Try a detailed prompt** with clear instructions
+2. **Try few-shot examples** if consistency is low
+3. **Try RAG** if the model lacks domain knowledge
+4. **Only then consider fine-tuning** if steps 1-3 are insufficient
+
+## Classroom exercise: three approaches
+
+Task: Create an expert on nineteenth-century Estonian literature.
+
+| Approach | Effort | Cost | Reproducible? |
+|----|----|----|----|
+| A: Prompt engineering | Low | None | Yes (with same seed) |
+| B: RAG | Medium | None | Yes |
+| C: Fine-tuning | High | Compute | Yes |
+
+---
+
+# Transfer Learning
+
+## The original BERT revolution
+
+The revolution was not BERT itself.
+
+The revolution was:
+
+> Train once, adapt many times.
+
+Before 2018:
+
+```
+Task A (sentiment) --> Model A
+Task B (NER)        --> Model B
+Task C (classification) --> Model C
+```
+
+After transfer learning:
+
+```
+Foundation model
+       ↓
+Adaptation layer (cheap, fast, task-specific)
+```
+
+## The adaptation pipeline
+
+```
+General language knowledge (pre-trained)
+          ↓
+Domain adaptation (familiarize with domain)
+          ↓
+Task adaptation (specialize for task)
+```
+
+Students can immediately understand this:
+
+* Domain adaptation = annotators reading your corpus
+* Task adaptation = annotators learning your coding scheme
+
+## Why transfer learning matters for DH
+
+* You do not need to build models from scratch
+* You can adapt a model trained on English web text to your 19th-century newspaper corpus
+* The model already knows grammar, syntax, and general semantics
+
+---
+
+# Instruction Tuning
+
+## The surprise
+
+Students often assume GPT-like models were trained to converse from the start.
+
+They were not.
+
+Base models are often **poor assistants**.
+
+## Base vs Instruction model
+
+### Base model
+
+Prompt:
+
+```text
+What is the capital of Estonia?
+```
+
+Output can be:
+
+* odd
+* incomplete
+* a continuation of the text, not an answer
+
+### Instruction model
+
+Same prompt:
+
+```text
+What is the capital of Estonia?
+```
+
+Output:
+
+```text
+Tallinn.
+```
+
+The difference is instruction tuning.
+
+## Core idea of instruction tuning
+
+Train on instruction-response pairs:
+
+```
+Translate: [text] --> [translation]
+Summarize: [text] --> [summary]
+Classify: [text] --> [label]
+Explain: [concept] --> [explanation]
+```
+
+The model learns **not just language** but **how to follow commands in language**.
+
+## DH analogy
+
+Instruction tuning is like:
+
+* Giving human annotators a **manual of task types**
+* Teaching them that "translate" means one thing, "classify" means another
+
+The same model can now **role-play** different scholarly tasks.
+
+---
+
+# Conversational Models
+
+## The chat layer
+
+Chat behavior is another adaptation layer applied on top of instruction tuning.
+
+| Model type | What it does |
+|----|----|
+| Base | Predicts next tokens |
+| Instruction | Follows commands |
+| Chat | Maintains dialogue |
+
+Chat models handle:
+
+* roles (system/user/assistant)
+* turn-taking
+* conversational memory
+
+## Exercise: base vs instruct
+
+Compare:
+
+* Qwen base
+* Qwen instruct
+
+on identical prompts.
+
+Students immediately see:
+
+* The base model continues text awkwardly
+* The instruct model follows the instruction
+
+## Why this matters for DH
+
+A fine-tuned chat model becomes:
+
+> A research assistant that speaks the vocabulary of your discipline.
+
+Not a magic oracle. A **specialized collaborator** with fixed capabilities.
+
+---
+
+# RLHF (Light Version)
+
+## The concept
+
+```
+Human preferences
+        ↓
+Reward model (learned what humans prefer)
+        ↓
+Optimization (adjust model to maximize reward)
+```
+
+The goal is simple:
+
+> Make outputs more useful and aligned with human expectations.
+
+## Avoid the algorithm
+
+Do not spend time on PPO details for DH students.
+
+The **concept** matters more than the algorithm:
+
+* Humans rank model outputs
+* A reward model learns those preferences
+* The base model is adjusted to produce preferred outputs
+
+## DH parallel
+
+RLHF is like:
+
+* An advisor reviewing draft annotations
+* Providing feedback that shapes future annotations
+* Leading to a more consistent and useful final set
+
+---
+
+# Parameter-Efficient Fine-Tuning
+
+## The problem with full fine-tuning
+
+Historically: fine-tuning meant modifying **every parameter**.
+
+For an 8-billion-parameter model:
+
+* Expensive
+* Slow
+* Requires GPU(s)
+* Risks overwriting useful general knowledge
+
+## The analogy
+
+Imagine editing:
+
+* An entire encyclopedia -- every word rewritten
+* **vs.** -- adding sticky notes to the margins
+
+LoRA is closer to sticky notes.
+
+## LoRA: Low-Rank Adaptation
+
+Core idea:
+
+* Freeze the original model weights
+* Inject small trainable matrices (adapters) alongside layers
+* Only the adapters are updated
+
+Result:
+
+* 100-1000x fewer trainable parameters
+* Same downstream performance (often)
+* Cheap and fast
+
+## QLoRA: LoRA + Quantization
+
+Combine:
+
+* Quantized base model (runs on less RAM)
+* LoRA adapters (cheap to train)
+
+Result:
+
+* Fine-tune a 70B model on a **single consumer GPU**
+* Or a 32B model on a laptop with dedicated GPU
+
+This democratized fine-tuning for researchers without HPC access.
+
+## Intuition summary
+
+| Method | What changes? | Trainable params | Cost |
+|----|----|----|----|
+| Full fine-tuning | Everything | 100% | High |
+| LoRA | Adapters only | ~1% | Low |
+| QLoRA | Adapters on quantized model | <1% | Very low |
+
+---
+
+# Dataset Design for Humanists
+
+## The most important decision
+
+Humanities students often focus on the model.
+
+The dataset is **usually more important**.
+
+No amount of clever fine-tuning can compensate for a poorly designed corpus.
+
+## Questions to ask
+
+| Aspect | Question to answer |
+|----|----|
+| Corpus size | How many examples are enough? |
+| Representativeness | Does the data cover the full range of variation? |
+| Annotation consistency | Who labeled it? Were labels consistent? |
+| Bias | What is missing? Who is over/under-represented? |
+
+## Quality over quantity
+
+| Dataset size | When it's enough |
+|----|----|
+| 50-200 examples | Simple tasks, clear categories |
+| 500-1000 examples | Complex tasks, noisy domains |
+| 10,000+ examples | Domain shift, multi-label tasks |
+
+For DH: **quality of instruction-response pairs matters more than volume.**
+
+A carefully curated set of 200 examples can outperform 10,000 noisy ones.
+
+## The DH parallel
+
+Fine-tuning dataset design mirrors:
+
+* Building a coding manual for human coders
+* Curating training data for annotators
+* Selecting a representative corpus for analysis
+
+The model learns from **your curation decisions**.
+
+---
+
+# Catastrophic Forgetting
+
+## A fascinating concept for humanists
+
+> Can a model become too specialized?
+
+Yes.
+
+## Demonstration concept
+
+Fine-tune a model heavily on one domain (e.g., literary criticism).
+
+Then test:
+
+| Capability | Before fine-tuning | After fine-tuning |
+|----|----|----|
+| Literary analysis | 0.65 | 0.92 |
+| General QA | 0.81 | 0.52 |
+| Code generation | 0.48 | 0.21 |
+| Commonsense reasoning | 0.76 | 0.44 |
+
+The model got better at one thing and **worse at many others**.
+
+## DH parallel
+
+> Interpretive specialization in a researcher carries a cost:
+> broad competence is sacrificed for depth.
+
+The model becomes a **narrow specialist**, not a generalist.
+
+## Mitigation
+
+* Use LoRA instead of full fine-tuning (smaller update)
+* Mix general data with domain data (continual pretraining)
+* Evaluate on diverse tasks, not just the target task
+
+---
+
+# Hands-On Fine-Tuning
+
+## Seminar plan: split into options
+
+### Option 1: Literary Style
+
+Dataset:
+
+* Oscar Wilde quotes
+* Virginia Woolf excerpts
+* Jane Austen passages
+
+Task:
+
+Style adaptation -- can the model write like a specific author?
+
+**Students love this.** Easy to evaluate (fun + informative).
+
+### Option 2: Historical Correspondence
+
+Train a small adapter on:
+
+* letters
+* diaries
+* memoirs
+
+Observe changes in model's tone, register, and formality in responses.
+
+### Option 3: Classification Assistant
+
+Fine-tune a small model to classify:
+
+* nationalism
+* religion
+* economy
+* science
+
+Connects directly to Week 7 (prompt engineering for classification).
+
+Compare prompting vs fine-tuning on the same task.
+
+## Using Unsloth for teaching
+
+Recommended tool: **Unsloth** (not Axolotl for intro purposes).
+
+Reasons:
+
+* Lower setup complexity
+* Well-structured notebooks
+* Easy Google Colab integration
+* Faster first success (less friction)
+
+Axolotl is excellent but better for advanced projects later.
+
+## Before you fine-tune: remember
+
+> Prompting changes the instructions.
+>
+> RAG changes the knowledge.
+>
+> Fine-tuning changes the model.
+
+Choose the right tool for the right level of adaptation.
+
+---
+
+# Suggested Readings
+
+## Essential
+
+1. **Unsloth Documentation**
+   [docs.unsloth.ai](https://docs.unsloth.ai)
+   One of the clearest practical introductions available.
+
+2. **Hugging Face Fine-Tuning Guide**
+   [huggingface.co/docs/transformers/training](https://huggingface.co/docs/transformers/training)
+   Students should know this ecosystem.
+
+## Strongly Recommended
+
+3. **LoRA: Low-Rank Adaptation of Large Language Models**
+   [arXiv:2106.09685](https://arxiv.org/abs/2106.09685)
+   Assign: Abstract, Introduction, Figures.
+   The intuition is more important than the mathematics.
+
+4. **QLoRA: Efficient Fine-tuning of Quantized LLMs**
+   [arXiv:2305.14314](https://arxiv.org/abs/2305.14314)
+   Assign only introductory sections.
+   Arguably the most important fine-tuning paper for practitioners.
+
+## Optional
+
+5. **Self-Instruct: Aligning Language Models with Self-Generated Instructions**
+   [arXiv:2212.10560](https://arxiv.org/abs/2212.10560)
+   Explains how instruction datasets are created.
+
+6. **LIMA: Less Is More for Alignment**
+   [arXiv:2305.11206](https://arxiv.org/abs/2305.11206)
+   Demonstrates that a small amount of high-quality conversational data can have dramatic effects.
+
+---
+
+# Summary
+
+## Key takeaways
+
+1. **Fine-tuning is one of several adaptation strategies** -- not a default
+2. **Try prompting and RAG first** -- they often solve the problem at zero cost
+3. **Transfer learning enables cheap adaptation** -- the foundation is already trained
+4. **Instruction tuning teaches a model to follow commands** -- it was not inherent
+5. **LoRA/QLoRA made fine-turing accessible** -- no HPC required
+6. **Dataset design is the real bottleneck** -- quality matters more than quantity
+7. **Catastrophic forgetting is real** -- specialization costs breadth
+8. **Prompting changes instructions. RAG changes knowledge. Fine-tuning changes the model.**
+
+---
+
+# Thank you!

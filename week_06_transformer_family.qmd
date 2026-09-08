@@ -1,0 +1,457 @@
+---
+title: "The Transformer and the Road to Modern LLMs"
+subtitle: "Gentle Introduction to AI (HVEE.00.049) -- Week 06"
+author: 
+    name: Maciej Eder
+    affiliation: University of Tartu | Polish Academy of Sciences
+date: 2026/09/08
+format: 
+  revealjs:
+    theme: pp.scss
+    logo: DigiTS-RGB-short-SMALL.svg
+    css: big_logo_DigiTS.css
+    self_contained: false
+---
+
+# Part I. Why Transformers Were Needed
+
+
+## Recap: from Week 5
+
+| Model | Main idea |
+|-------|-- -----|-----|
+| word2vec | word meaning from context |
+| BERT | contextual embeddings |
+| **Transformer** | **attention-based architecture** |
+| GPT | Transformer scaled for generation |
+
+
+## The problem with RNNs / LSTMs
+
+- They process text **sequentially**, one word at a time
+- Long-range dependencies are hard to learn
+- Gradient vanishing: distant words "forget" what came before
+
+### Key intuition
+
+> The book that I bought _yesterday_ because my old copy was damaged was excellent.
+
+To understand *book* ↔ *excellent*, the RNN must propagate info through many intermediate words.
+
+
+## The bottleneck
+
+| Architecture | Parallel processing? | Long-range context? |
+|----|------|--------------------|
+| RNN/LSTM | No | Poor |
+| Transformer | **Yes** | **Excellent** |
+
+
+# Part II. Attention as Selective Reading
+
+
+## The attention question
+
+When humans read:
+
+> The king spoke to his **subjects**.
+
+which words matter for interpreting "king"?
+
+Students naturally answer:
+
+* king
+* subjects
+* spoke
+
+Attention = selective focus on relevant context.
+
+
+## A DH analogy
+
+Attention resembles:
+
+* **citation networks** — not all references are equally important
+* **intertextual references** — some texts echo earlier works more than others
+* **close reading** — certain words carry more interpretive weight
+
+> Not all words contribute equally to meaning.
+
+
+# Part III. Self-Attention
+
+
+## How self-attention works
+
+A token asks:
+
+> Which other tokens in this sentence should I pay attention to?
+
+Example:
+
+> The animal didn't cross the street because **it** was too tired.
+
+* **it** = ?
+* The animal ← this is what matters for *it*
+
+
+## Key insights
+
+Attention allows:
+
+* **long-range dependencies** — far-apart words still connect
+* **parallel computation** — no need to wait for sequential processing
+* **context-sensitive representations** — same token, different focus
+
+
+## Visualising attention
+
+```{r}
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = LR]
+  
+  node [shape = rectangle, fixedsize = true, width = 2, style = filled, fillcolor = Beige]
+  node [fontsize = 13]
+  
+  A1 [label = 'The']
+  A2 [label = 'king']
+  A3 [label = 'spoke']
+  A4 [label = 'to']
+  A5 [label = 'his']
+  A6 [label = 'subjects']
+  
+  B1 [label = 'A1']
+  B2 [label = 'A2']
+  B3 [label = 'A3']
+  B4 [label = 'A4']
+  B5 [label = 'A5']
+  B6 [label = 'A6']
+  
+  edgesetA [label = 'A', shape = plaintext]
+  
+  subgraph cluster_attention {
+    label = 'Attention Weights'
+    style = rounded
+    A1 -> A2 [color=blue, penwidth=3, label='strong']
+    A1 -> A3 [color=blue, penwidth=2]
+    A1 -> A6 [color=blue, penwidth=1]
+    A1 -> A4 [color=grey, penwidth=0.5, style=dotted]
+    A1 -> A5 [color=grey, penwidth=0.5, style=dotted]
+    A6 -> A2 [color=red, penwidth=4, label='focus']
+    A6 -> A3 [color=red, penwidth=2]
+    A6 -> A1 [color=red, penwidth=1]
+  }
+  
+  }")
+
+```
+
+# Part IV. Multi-Head Attention
+
+
+## Multiple readers
+
+Imagine several readers analyzing the **same text** simultaneously:
+
+1. **Reader 1** focuses on *syntax* (grammar roles)
+2. **Reader 2** focuses on *semantic relations* (meaning)
+3. **Reader 3** focuses on *discourse structure* (how ideas connect)
+4. **Reader 4** focuses on *named entities* (people, places)
+
+Each is an **attention head**.
+
+
+## One sentence, several perspectives
+
+> The old king who ruled the northern provinces spoke to the ambassador.
+
+- Head 1 finds: **king** → **spoke** (subject-verb)
+- Head 2 finds: **provinces** ↔ **northern** (modifier-noun)
+- Head 3 finds: **king** ↔ **oldest** (age attribute)
+- Head 4 finds: **ambassador** as a person
+
+
+## Visual comparison
+
+```{r}
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = TD]
+  
+  node [shape = rectangle, style = filled, width = 3.5]
+  
+  box1 [label = 'input\\ntokens', fillcolor = Beige, width = 4]
+  
+  node [shape = rectangle, style = filled, width = 2]
+  
+  h1 [label = 'head 1\\nsyntax', fillcolor = LightBlue]
+  h2 [label = 'head 2\\nsemantics', fillcolor = LightGreen]
+  h3 [label = 'head 3\\ndiscourse', fillcolor = LightYellow]
+  h4 [label = 'head 4\\nentities', fillcolor = MistyRose]
+  
+  merged [label = 'concatenate\\n& project', fillcolor = Linen, width = 4]
+  
+  box1 -> h1
+  box1 -> h2
+  box1 -> h3
+  box1 -> h4
+  
+  h1 -> merged
+  h2 -> merged
+  h3 -> merged
+  h4 -> merged
+  
+  }")
+
+```
+
+# Part V. Positional Encoding
+
+
+## An obvious problem
+
+> Transformers process words **simultaneously**.
+> How do they know the **order**?
+
+
+## The dog bites man / man bites dog test
+
+| Sentence | Meaning |
+|------------------------|------------------------------|
+| Dog bites man | The dog is the aggressor |
+| Man bites dog | The man is the aggressor |
+
+Same tokens, **different meaning**.
+
+
+## Positional encoding
+
+* Injects **order information** into token representations
+* No mathematics needed for intuition:
+  each token gets a unique "timestamp" added to its vector
+
+> Attention knows **relationships**; positional encoding knows **sequence**.
+
+# Part VI. Encoder vs Decoder
+
+
+## The architecture landscape
+
+| Model | Architecture | Use |
+|-------|-- -----|-----|
+| BERT | **Encoder** | Understanding (classification, NER...) |
+| T5 | Encoder-Decoder | Translation, summarization |
+| **GPT** | **Decoder-only** | Text generation |
+| Mistral | Decoder-only | Text generation |
+| DeepSeek | Decoder-only | Text generation + reasoning |
+
+
+## Why different architectures?
+
+| Architecture | Strength |
+|----|-------|
+| **Encoder** | Reads full context → excellent for **understanding** |
+| **Decoder** | Generates one token at a time → excellent for **creating** |
+| **Encoder-Decoder** | Reads full input → generates structured output → excellent for **translation** |
+
+
+## BERT vs GPT
+
+| Feature | BERT | GPT |
+|---------|------|-----|
+| Architecture | Encoder | Decoder |
+| Direction | Bidirectional | Unidirectional (left to right) |
+| Training | Masked language modeling | Next-token prediction |
+| Primary use | Classification, understanding | Generation, chatbots |
+| DH use | Semantic search, NER, text analysis | Text generation, summarization |
+
+# Part VII. GPT in Practice
+
+
+## GPT's core idea
+
+> The capital of Estonia is ...
+
+1. Predict next token
+2. Append it to the text
+3. Repeat
+
+Do this **thousands of times**.
+
+Scale dramatically.
+
+The result is surprisingly sophisticated behavior.
+
+
+## The decoder pipeline
+
+```{r}
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = LR]
+  
+  node [shape = rectangle, style = filled, fillcolor = Beige]
+  
+  box1 [label = 'input\\nprompt']
+  box2 [label = 'DECODER\\nLAYERS', fillcolor = Linen, width = 3]
+  box3 [label = 'next token\\nprobability']
+  box4 [label = 'sample / argmax']
+  box5 [label = 'new token']
+  
+  # edges
+  box1 -> box2
+  box2 -> box3
+  box3 -> box4
+  box4 -> box5
+  box5 -> box2
+  
+  # make it look like a loop
+  box5 -> box4 [dir=back, style=dotted, color=grey]
+  box5 -> box1 [label = 'appended', style = dashed]
+  
+  }")
+
+```
+
+# Part VIII. Scaling Laws
+
+
+## Three dimensions of scale
+
+| Dimension | What it is |
+|----|------|
+| **Model size** | Number of parameters |
+| **Data size** | Amount of training text |
+| **Compute** | Training resources (GPU time) |
+
+
+## The Kaplan result (2020)
+
+> Performance improves **predictably** with scale.
+> No obvious plateau was observed.
+
+This was one of the discoveries that triggered the current LLM boom.
+
+**Surprise**: bigger isn't worse -- bigger is **more capable**.
+
+
+## DH analogy
+
+Consider:
+
+* A corpus of **1,000 books**
+* A corpus of **10 million books**
+
+The larger corpus reveals patterns unavailable in the smaller one.
+
+**Larger data → richer representations → emergent capabilities.**
+
+
+## Emergent abilities
+
+As models scale, new capabilities appear **not designed** but **emergent**:
+
+| Capability | Appears around |
+|--|--|
+| In-context learning | GPT-3 scale |
+| Chain-of-thought reasoning | GPT-4 scale |
+| Code generation | GPT-4 scale |
+| Few-shot learning | GPT-3 scale |
+
+
+# Part IX. The Modern LLM Ecosystem
+
+
+## GPT (OpenAI)
+
+* Established the **decoder-only** paradigm for chat/generation
+* GPT-4: multimodal, millions of parameters
+* Proprietary, API-based
+
+## Mistral (Mistral AI)
+
+* Shows that **efficient** open-weight models can compete
+* Mistral 7B -- competitive with much larger models
+* Open weights → usable locally
+
+## DeepSeek
+
+* Demonstrates how **architectural optimization** reduces costs
+* Training strategy focus
+* Strong open-source reasoning models
+* Efficient training at scale
+
+## The key message
+
+> Modern LLM development is **not** about entirely new architectures.
+> It's about **efficiency, training strategy, and scaling**.
+
+
+# Part X. Humanities Perspective
+
+
+## What changes when archives are "understood"?
+
+1. **Semantic search** replaces keyword matching
+2. Every historical document becomes **queryable**
+3. **Latent representations** replace manual classification
+4. Patterns invisible to human readers become visible
+
+## The DH opportunity
+
+| Before | After Transformers |
+|--------|----|
+| Keyword search | Semantic search |
+| Manual annotation | Model-assisted labeling |
+| Small corpus research | Full-archive analysis |
+| Close reading | **Close reading + distant reading together** |
+
+
+# Summary
+
+
+## Key takeaways
+
+1. **Transformers solved a real problem** -- RNN limits were a bottleneck
+2. **Attention is selective focus** -- not all words matter equally
+3. **Multi-head attention = many perspectives** on the same text
+4. **Positional encoding** restores order information
+5. **Encoder = understanding, Decoder = generation**
+6. **Scaling is the secret** -- more data, more parameters, more compute
+7. **Modern LLMs share one architecture** -- the decoder-only Transformer
+
+
+## Recommended Readings
+
+### Essential
+
+1. **The Illustrated Transformer**
+   [Jay Alammar](https://jalammar.github.io/illustrated-transformer/)
+   Assign the entire article.
+
+2. **Attention Is All You Need** (Vaswani et al. 2017)
+   [arXiv:1706.03762](https://arxiv.org/abs/1706.03762)
+   Assign: Abstract, Introduction, Figure 1, Section 3.2
+
+3. **The Illustrated GPT-2**
+   [Jay Alammar](https://jalammar.github.io/illustrated-gpt2/)
+   The essential bridge from Transformer to LLM.
+
+### Strongly Recommended
+
+4. **Language Models are Few-Shot Learners** (Brown et al. 2020)
+   [arXiv:2005.14165](https://arxiv.org/abs/2005.14165) -- Abstract, Introduction, Scaling discussion
+
+5. **Scaling Laws for Neural Language Models** (Kaplan et al. 2020)
+   [arXiv:2001.08361](https://arxiv.org/abs/2001.08361) -- selected excerpts
+
+### Optional
+
+6. **The Annotated Transformer**
+   [nlp.seas.harvard.edu/annotated-transformer](https://nlp.seas.harvard.edu/annotated-transformer/)
+
+7. **Mistral 7B**
+   [arXiv:2310.06825](https://arxiv.org/abs/2310.06825)
+
+8. **DeepSeek-V3 Technical Report**
+   [arXiv:2412.19437](https://arxiv.org/abs/2412.19437)
+
+# Thank you!

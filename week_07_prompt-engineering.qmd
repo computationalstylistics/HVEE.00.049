@@ -1,0 +1,518 @@
+---
+title: "Prompt Engineering: Designing Measurement Instruments"
+subtitle: "Gentle Introduction to AI (HVEE.00.049) -- Week 07"
+author: 
+    name: Maciej Eder
+    affiliation: University of Tartu | Polish Academy of Sciences
+date: 2026/09/08
+format: 
+  revealjs:
+    theme: pp.scss
+    logo: DigiTS-RGB-short-SMALL.svg
+    css: big_logo_DigiTS.css
+    self_contained: false
+---
+
+
+
+
+
+## A Pedagogical Reframing 
+
+Examples & tutorials usually focus on:
+
+- "write me a poem"
+- "summarize this article"
+- "act as a travel guide"
+
+For most of us: not very interesting.
+
+
+## Reframing
+
+Prompting as:
+
+> Designing a measurement instrument.
+
+We intuitively understand:
+
+* questionnaires
+* coding schemes
+* annotation guidelines
+* content analysis protocols
+
+
+# Zero-shot Classification
+
+
+## The setup
+
+Suppose we have 10,000 newspaper articles.
+
+Question:
+
+> Which articles discuss nationalism?
+
+Traditionally:
+
+* Annotate examples
+* Train classifier
+* Evaluate
+
+With modern LLMs:
+
+```
+Classify the following article into one of:
+
+- nationalism
+- economy
+- religion
+- science
+
+Return only the label.
+```
+
+No training examples.
+
+
+## Exercise: zero-shot
+
+Use:
+
+* parliamentary speeches
+* newspaper articles
+* literary reviews
+
+Ask students to construct their own category labels.
+
+Example:
+
+```text
+Classify this paragraph as:
+
+- positive
+- neutral
+- negative
+
+Return only the category.
+```
+
+Then compare:
+
+* human annotations
+* LLM annotations
+
+
+## From annotations to evaluation
+
+This naturally introduces:
+
+* inter-annotator agreement
+* LLM-as-annotator debates
+* reliability vs. validity
+
+
+# Few-shot Classification
+
+
+## Now add examples
+
+```text
+Text:
+"The nation must defend its traditions."
+
+Label:
+nationalism
+
+Text:
+"Industrial production increased by 12 percent."
+
+Label:
+economy
+
+Now classify:
+
+"The markets are crashing and interest rates rise."
+
+Label:
+```
+
+
+## What students observe
+
+* more stable outputs
+* better consistency
+* fewer hallucinations
+
+
+## Hands-on Exercise
+
+Use a corpus of:
+
+* literary reviews
+* political speeches
+* newspaper articles
+
+Build prompts with:
+
+* 0 examples (zero-shot)
+* 2 examples (few-shot)
+* 10 examples (extended few-shot)
+
+Compare results.
+
+
+# Prompt Engineering as Research Design
+
+
+## Bad prompt
+
+```text
+Analyze this text.
+```
+
+Too vague. Unpredictable output.
+
+
+## Better prompt
+
+```text
+Determine whether the text expresses attitudes
+towards industrial modernization.
+
+Return only the label.
+```
+
+More defined task. More consistent.
+
+
+## Even better
+
+```text
+Determine whether the author expresses positive,
+negative, or neutral attitudes towards industrial
+modernization.
+
+Definitions:
+
+Positive:
+approval of industrial development, especially of
+factories and mechanisation.
+
+Negative:
+criticism of industrial development and its impact
+on communities or the environment.
+
+Neutral:
+factual information about industrial topics without
+clear judgement.
+
+Return JSON.
+```
+
+
+## The DH connection
+
+> Better prompts resemble better annotation guidelines.
+
+Both need:
+
+* clear definitions
+* unambiguous categories
+* output format specification
+
+
+# Structured Output
+
+
+## The problem with free text
+
+Bad:
+
+```text
+What is this article about?
+```
+
+Output:
+
+```text
+This article is about the French Revolution and its impact on European politics, particularly regarding the role of the bourgeoisie ...
+```
+
+Unparseable.
+
+
+## Structured output (JSON)
+
+Good:
+
+```text
+Return JSON only:
+
+{
+ "topic": "...",
+ "sentiment": "positive|neutral|negative",
+ "persons": ["..."],
+ "entities": ["..."]
+}
+```
+
+Output:
+
+```json
+{
+ "topic": "French Revolution",
+ "sentiment": "neutral",
+ "persons": ["Robespierre", "Danton"],
+ "entities": ["National Assembly"]
+}
+```
+
+
+## Why it matters later
+
+Structured output enables:
+
+* RAG pipelines
+* automated data collection
+* batch processing
+* database import
+
+For DH research this is often more useful than the text itself.
+
+
+# Classification Tasks Relevant to DH
+
+
+## Topic Classification
+
+Categories:
+
+* religion
+* politics
+* economy
+* culture
+* science
+
+
+## Sentiment Analysis
+
+Historical newspapers.
+
+Questions:
+
+* attitudes towards women
+* attitudes towards technology
+* attitudes towards modernization
+
+
+## Stance Detection
+
+Much more interesting than sentiment.
+
+```text
+Supportive
+Opposed
+Neutral
+```
+
+towards:
+
+* suffrage
+* nationalism
+* industrialization
+
+
+## Genre Classification
+
+Literary texts:
+
+* poetry
+* drama
+* fiction
+* criticism
+
+
+## Character Classification
+
+Literary studies.
+
+Classify:
+
+* protagonist
+* antagonist
+* minor character
+
+using contextual excerpts from plays or novels.
+
+
+# Prompt Iteration
+
+
+## The process
+
+```text
+[Bad prompt]
+|
+V
+[Observe errors]
+|
+V
+[Improve definitions]
+|
+V
+[Add examples]
+|
+V
+[Add output format]
+|
+V
+[Run at scale]
+```
+
+
+## Example: improvement steps
+
+| Step | Prompt | Result |
+|------|---|---|
+| v1 | "Classify the text" | inconsistent categories |
+| v2 | Add definition of categories | better consistency |
+| v3 | Add examples | fewer hallucinations |
+| v4 | Add JSON format | parseable output |
+| v5 | Add confidence score | more reliable |
+
+
+# Evaluation
+
+
+## Key lesson
+
+> Prompting is not just generating answers. It is creating reproducible measurements.
+
+
+## How to evaluate
+
+Give 100 texts with human labels.
+
+Have the LLM produce labels.
+
+Compute:
+
+* accuracy
+* precision
+* recall
+* Cohen kappa (for inter-rater agreement)
+
+
+## The inter-annotator debate
+
+* Can we trust LLM as annotators?
+* Compare LLM vs. human agreement
+* Compare LLM vs. LLM agreement (multiple runs)
+* When is the LLM "good enough"?
+* When do we need human review?
+
+
+# Advanced Prompting Techniques
+
+
+## Role prompting
+
+```text
+You are a historian of nineteenth-century Estonia.
+You have expertise in political discourse analysis.
+```
+
+
+## Chain-of-thought
+
+```text
+Think step by step.
+First identify the main topic, then determine the stance,
+then justify your choice in one sentence.
+```
+
+Useful to demonstrate but sometimes overkill for classification.
+
+
+## Delimited inputs
+
+```text
+Analyze only the text between <TEXT> tags:
+
+<TEXT>
+[article text here]
+</TEXT>
+```
+
+Prevents leakage from instructions into the analysis.
+
+
+## Self-consistency
+
+Run the same prompt 5 times on the same text.
+
+Compare outputs.
+
+Students discover that **LLMs are not deterministic**.
+
+Leads to discussions about reproducibility.
+
+
+```text
+Run the same prompt 5 times:
+Result 1: nationalism
+Result 2: nationalism
+Result 3: neutral
+Result 4: nationalism
+Result 5: nationalism
+
+→ Consensus: nationalism (4 out of 5)
+```
+
+
+# Suggested Workshop
+
+
+## Workflow
+
+### Corpus
+
+100–200 newspaper articles.
+
+### Goal
+
+Classify into:
+
+* nationalism
+* religion
+* economy
+* science
+
+
+### Steps
+
+1. Zero-shot prompt → see errors
+2. Add definitions → see improvement
+3. Add examples → see further improvement
+4. Add JSON output → see structure
+5. Evaluate against human labels → see limits
+
+
+## DH-specific exercise
+
+### Sentiment over time
+
+* Collect 50 articles about "women's rights" from 1870–1900
+* Classify sentiment with three-shot prompt
+* Plot sentiment distribution across decades
+* Discuss: what might drive the change?
+
+
+## Final Project Reminder
+
+> Think of prompt design not as "talking to ChatGPT"
+> but as building a reproducible coding protocol.
+
+
+# thank you!

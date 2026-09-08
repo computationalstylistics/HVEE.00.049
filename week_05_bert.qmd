@@ -1,0 +1,391 @@
+---
+title: "BERT: Context-Aware Language Understanding"
+subtitle: "Gentle Introduction to AI (HVEE.00.049) -- Week 05"
+author: 
+    name: Maciej Eder
+    affiliation: University of Tartu | Polish Academy of Sciences
+date: 2026/09/08
+format: 
+  revealjs:
+    theme: pp.scss
+    logo: DigiTS-RGB-short-SMALL.svg
+    css: big_logo_DigiTS.css
+    self_contained: false
+---
+
+# Distributional semantics recap
+
+
+## Words as vectors
+
+- Words can be represented as vectors (numbers)
+- Similar words cluster together in vector space
+- Analogy: `king - man + woman ≈ queen`
+- The meaning of a word is captured by its context ([Firth, 1957]: "You shall know a word by the company it keeps")
+
+
+## The fundamental assumption
+
+One word = One vector
+
+![](img/word2vec_space.png)
+
+
+## But what about... ambiguity?
+
+- The same word can have different meanings
+- Context matters for understanding
+- How can we represent this?
+
+# The problem with word embeddings
+
+
+## One vector per word
+
+- Word2vec, GloVe: _one word = one vector_
+- But words are not monolithic!
+
+```{.python code-line-numbers="false"}
+# Example: "bank" has the same vector everywhere
+bank_vector = [0.12, -0.34, 0.56, ...]
+```
+
+
+## The bank problem
+
+> "I sat by the **bank**."  
+
+vs.  
+
+> "I deposited money at the **bank**."
+
+_The same word, completely different meanings._
+
+## Ambiguity in practice
+
+| Word | Possible meanings |
+|------|-------------------|
+| bank | river bank, financial bank |
+| mouse | animal, computer device |
+| cell | biology cell, prison cell, battery cell |
+| bat | animal, sports equipment |
+
+_With word2vec: one vector, all meanings collapsed into one._
+
+
+## DH perspective: semantic change
+
+> How did the meaning of _liberal_ change from 1850 to 2020?
+
+- Word2vec cannot track this
+- One vector cannot capture historical shift
+- But context can!
+
+# BERT: the solution
+
+
+## BERT in perspective
+
+| Model | Unit represented |
+|-------|------------------|
+| word2vec | word |
+| doc2vec | document |
+| BERT | word-in-context |
+| SBERT | sentence |
+| GPT | next-token prediction |
+
+_BERT: the missing link between word embeddings and language understanding._
+
+
+## Core insight
+
+> One word occurrence = One vector
+
+The same word gets **different representations** depending on context.
+
+Example:
+- "river **bank**" → different vector
+- "**bank** approved the loan" → different vector
+
+## Bidirectional context
+
+![](img/bert_bidirectional.png)
+
+- Earlier models read left-to-right (GPT)
+- BERT reads **both directions simultaneously**
+- _Left context_ + _right context_ = richer meaning
+
+## The Transformer encoder
+
+BERT uses **only the encoder** side of the Transformer:
+
+```{r}
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = TD]
+  
+  node [shape = rectangle, fixedsize = true, width = 3, style = filled, fillcolor = Beige]
+  box1 [label = 'input text']
+  box2 [label = 'TRANSFORMER\\nENCODER', fillcolor = Linen, width = 2]
+  
+  # edge definitions with the node IDs
+  box1 -> box2
+  
+  }")
+
+```
+
+
+## Masked Language Modelling
+
+```{.python code-line-numbers="false"}
+# We hide words randomly:
+sentence = "The cat sat on the [MASK]."
+          "He deposited money in the [MASK]."
+
+# The model predicts what was hidden:
+predict("[MASK]") → "carpet"
+predict("[MASK]") → "bank"
+```
+
+
+## How MLM works
+
+![](img/bert_mlm.png)
+
+## From word embeddings to contextual embeddings
+
+```{.python code-line-numbers="false"}
+from transformers import BertTokenizer, BertModel
+
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+model = BertModel.from_pretrained('bert-base-uncased')
+
+text = "The bank was flooded"
+tokens = tokenizer.encode(text, return_tensors='pt')
+output = model(tokens)
+
+# Each word has a DIFFERENT vector
+# "bank" here ≠ "bank" in the loan context!
+```
+
+
+## Layered understanding
+
+BERT has 12 layers (base) or 24 layers (large):
+
+- **Lower layers**: character, syntactic, word-level info
+- **Middle layers**: phrase structure, dependencies
+- **Upper layers**: semantic, contextual, task-specific info
+
+_The layers are like a pipeline from "text" to "meaning"._
+
+# BERT in Digital Humanities
+
+
+## Text understanding tasks
+
+- **Classification**: genre, sentiment, authorship
+- **Named Entity Recognition**: people, places, organizations
+- **Semantic similarity**: finding similar passages
+- **Textual reuse**: identifying copied material
+
+## DH example 1: semantic shift
+
+```{.python code-line-numbers="false"}
+import numpy as np
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+# Compare "bank" in different centuries
+bank_1700 = get_embedding("bank", corpus="1700_corpus")
+bank_2020 = get_embedding("bank", corpus="2020_corpus")
+
+similarity = cosine_similarity(bank_1700, bank_2020)
+# If similarity is low → semantic change detected!
+```
+
+
+## DH example 2: entity recognition
+
+```{.python code-line-numbers="false"}
+text = "Charles Darwin visited the Galápagos Islands in 1835"
+
+# BERT-NER output:
+# "Charles Darwin" → PERSON
+# "Galápagos Islands" → LOCATION
+# "1835" → DATE
+```
+
+_Useful for processing historical archives, letters, newspapers._
+
+
+## DH example 3: textual similarity
+
+```{.python code-line-numbers="false"}
+from transformers import SentenceTransformer
+
+# Sentence-BERT (more on that soon...)
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+passage_a = "The king sat on the bank of the river"
+passage_b = "The river bank was muddy"
+passage_c = "The bank denied my loan"
+
+# Similarity scores:
+sim(a, b) → 0.92  # very similar
+sim(a, c) → 0.31  # very different
+```
+
+# Why BERT vs GPT matters
+
+
+## BERT vs GPT
+
+| Feature | BERT | GPT |
+|---------|------|-----|
+| Architecture | Encoder | Decoder |
+| Understanding | Yes | No |
+| Generation | No | Yes |
+| Prediction | Masked | Next-token |
+| DH use | Classification | Text generation |
+
+ 
+## When to use BERT
+
+- You want to **classify** text (genre, sentiment, ...)
+- You want to **find entities** in documents
+- You want **semantic similarity** between passages
+- You need a **deep understanding** of text
+
+
+## When to use GPT
+
+- You want to **generate** text
+- You want to **translate** languages
+- You want to **summarize** documents
+- You want to **answer questions**
+
+# Sentence-BERT (SBERT)
+
+
+## Why SBERT?
+
+> "BERT is great for understanding. But I need to compare whole passages."
+
+Ordinary BERT computes **per-token** embeddings.  
+For document-level tasks, we need **sentence-level** embeddings.
+
+## SBERT architecture
+
+```{.python code-line-numbers="false"}
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+sentences = [
+    "The king sits on the bank",
+    "A financial institution approved the loan",
+    "The river bank was flooded"
+]
+
+embeddings = model.encode(sentences)
+
+# Now compute cosine similarity!
+# Result: 3x3 similarity matrix
+```
+
+
+## DH applications of SBERT
+
+- **Document clustering**: group similar texts
+- **Duplicate detection**: find copied passages
+- **Concept search**: find texts about the same topic
+- **Archival exploration**: browse by meaning, not keywords
+
+## Example: finding similar passages
+
+```{.python code-line-numbers="false"}
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Imagine texts from the same archive:
+texts = [
+    "The printing press was invented by Gutenberg",
+    "The Renaissance transformed European culture",
+    "Gutenberg's invention revolutionized book production",
+    "The Baroque period followed the Renaissance"
+]
+
+embeddings = model.encode(texts)
+sim_matrix = cosine_similarity(embeddings)
+
+# Texts 1 and 3 will be the most similar
+```
+
+# Practical BERT
+
+
+## Key BERT models
+
+| Model | Parameters | Context |
+|-------|------------|---------|
+| BERT-base | 110M | 12 layers, 768 dims |
+| BERT-large | 340M | 24 layers, 1024 dims |
+| RoBERTa | 110M+ | Optimized BERT |
+| DistilBERT | 66M | Faster, smaller |
+| ELECTRA | 77M | Trained via replacement |
+
+## Loading BERT in practice
+
+```{.python code-line-numbers="false"}
+from transformers import pipeline
+
+# Easiest way: use a pipeline
+classifier = pipeline("text-classification")
+
+result = classifier([
+    "The bank was flooded",
+    "The bank granted a loan"
+])
+
+print(result)
+# [{'label': 'LOCATION', 'score': 0.92},
+#  {'label': 'FINANCIAL', 'score': 0.87}]
+```
+
+
+## Using BERT in DH research
+
+1. **Start with SBERT** for similarity tasks (easier, faster)
+2. **Use BERT** for classification, entity recognition
+3. **Fine-tune** on your own data (small annotated datasets)
+4. **Compare** embeddings across historical periods
+
+# Summary
+
+
+## Key takeaways
+
+1. **Word2vec has limitations** — one vector per word cannot capture meaning shifts
+2. **BERT solves this** — the same word gets different representations in different contexts
+3. **Bidirectional attention** is the key innovation
+4. **SBERT extends BERT** — for sentence-level similarity, the most DH-relevant task
+5. **BERT vs GPT** — understanding vs. generation (and why DH needs both)
+
+
+## Recommended reading
+
+### Essential
+
+- **BERT paper**: [arXiv:1810.04805](https://arxiv.org/abs/1810.04805) — Abstract, Introduction, Fig. 1, Sec. 3.1
+- **Illustrated BERT**: [jalammar.github.io](https://jalammar.github.io/illustrated-bert/)
+- **Sentence-BERT**: [arXiv:1908.10084](https://arxiv.org/abs/1908.10084)
+
+
+### Recommended
+
+- **BERTology**: [arXiv:2002.12327](https://arxiv.org/abs/2002.12327) — survey of what we learned
+- **BERT Rediscovers NLP**: [arXiv:1905.05950](https://arxiv.org/abs/1905.05950) — layers capture linguistic levels
+
+
+# thank you!

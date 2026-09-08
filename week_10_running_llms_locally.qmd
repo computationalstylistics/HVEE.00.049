@@ -1,0 +1,743 @@
+---
+title: "Running LLMs Locally"
+subtitle: "Gentle Introduction to AI (HVEE.00.049) -- Week 10"
+author: 
+    name: Maciej Eder
+    affiliation: University of Tartu | Polish Academy of Sciences
+date: 2026/09/08
+format: 
+  revealjs:
+    theme: pp.scss
+    logo: DigiTS-RGB-short-SMALL.svg
+    css: big_logo_DigiTS.css
+    self_contained: false
+---
+
+# From Consumer to Infrastructure
+
+# What is an LLM, Really?
+
+## The default assumption
+
+> AI = a website owned by a company.
+
+Most students interact with:
+
+* ChatGPT through chat.openai.com
+* Claude through claude.ai
+* Gemini through a Google page
+
+For them, AI is **not something you install**. It is something you **access**.
+
+## The conceptual shift
+
+Running models locally flips this:
+
+> Models are **file objects** you load, swap, and benchmark — not monolithic services.
+
+This introduces:
+
+* **Reproducibility** — anyone can run the same model
+* **Privacy** — your data never leaves your machine
+* **Computational constraints** — every choice has a cost
+* **Model selection** — choosing a model is a methodological decision
+
+## Models as Research Instruments
+
+The main learning goal:
+
+> Selecting a model is analogous to selecting a corpus, a coding scheme, or a statistical test.
+
+This is more important than memorizing what quantization means.
+
+## Closed vs Open-Weight Models
+
+| Closed models | Open-weight models |
+|----|----|
+| GPT-4o | Gemma |
+| Claude | Qwen |
+| Gemini | Mistral |
+| Gemini Ultra | Llama |
+
+The distinction is crucial and rarely discussed in DH.
+
+## Closed Model Ecosystem
+
+* **GPT-4o** (OpenAI) — multimodal, API-only
+* **Claude** (Anthropic) — context-heavy, API-only
+* **Gemini** (Google) — integrated ecosystem
+
+All follow the same pattern:
+
+> Use the API. You do not choose the model version.
+
+## Open-Weight Model Ecosystem
+
+Open-weight means:
+
+* Download the weights (a file)
+ * Load them yourself
+* Swap them out at will
+* Compare different versions
+
+Key families:
+
+* **Gemma** (Google)
+* **Qwen** (Alibaba)
+* **Mistral** (Mistral AI)
+* **Llama** (historically important)
+
+---
+
+# Running Models Locally
+
+# Live Demonstration: Ollama
+
+## What is Ollama?
+
+A tool that turns your laptop into a model library:
+
+```bash
+ollama run gemma3
+```
+
+Then:
+
+```bash
+ollama run qwen3
+```
+
+Then:
+
+```bash
+ollama list
+```
+
+## What students see
+
+The output of `ollama list`:
+
+| MODEL | SIZE | PARAMS |
+|----|----|----|
+| gemma3:latest | 4.2 GB | 4B |
+| qwen3:latest | 7.8 GB | 8B |
+| mistral:latest | 4.1 GB | 7B |
+
+Three trivial-but-transformative observations:
+
+1. **Models are files** — they have a size
+2. **Models occupy disk space** — there is a cost
+3. **Models can be swapped** — you choose what to run
+
+## The mental shift
+
+Students who have never run a model locally are often surprised by:
+
+* The download time
+* The disk space it takes
+* The fact that the model **sits on their hard drive**
+
+This is conceptually transformative for humanities students who think of AI as **cloud software**.
+
+## Comparison Exercise
+
+Run identical prompts with different models:
+
+```
+Classify the following paragraph:
+
+"Despite widespread optimism about industrial growth,
+a growing faction of parliamentarians warned of the
+social consequences of unregulated factory production."
+
+Categories: politics, economy, society, culture
+Return only the label.
+```
+
+## What students observe
+
+| Model | Output | Speed |
+|----|----|----|
+| Gemma 4B | politics | fast |
+| Qwen 8B | politics | moderate |
+| Mistral 7B | society | fast |
+
+Note the **disagreement**. This is the point.
+
+> If two researchers use different models on the same text,
+> are their results directly comparable?
+
+Answer: **often not.**
+
+---
+
+# Small vs Large Models
+
+# The Bigger is Better Myth
+
+## The intuitive assumption
+
+> A bigger model must be better.
+
+The reality is more nuanced. Model size is a **trade-off**, not a virtue.
+
+## The trade-off triangle
+
+For every model decision, you balance:
+
+* **Accuracy** — how good is the output?
+* **Speed** — how fast can I process a corpus?
+* **Hardware** — what do I need to run it?
+
+Optimize two, compromise one.
+
+## Classroom experiment: classification
+
+Prompt:
+
+```text
+Classify the following paragraph as:
+religion, politics, economy, science.
+Return only the label.
+```
+
+Run on:
+
+| Model | Parameters | Output |
+|----|----|----|
+| Gemma 4B | 4B | politics |
+| Gemma 12B | 12B | politics |
+| Qwen 8B | 8B | politics |
+| Qwen 32B | 32B | politics |
+
+For this task, all agree. The 32B model adds nothing.
+
+## Classroom experiment: summarization
+
+Prompt:
+
+```text
+Summarize this article in two sentences.
+```
+
+Run on:
+
+| Model | Length | Coherence | Detail |
+|----|----|----|----|
+| Gemma 4B | short | ok | partial |
+| Qwen 8B | medium | good | better |
+| Qwen 32B | long | very good | full |
+
+Now size matters — but at what cost?
+
+## Classroom experiment: information extraction
+
+Prompt:
+
+```text
+Extract all personal names, places, and organizations.
+Return JSON.
+```
+
+Run on:
+
+| Model | Names | Places | Organizations | JSON valid? |
+|----|----|----|----|----|
+| Gemma 4B | 3/5 | 2/5 | 1/3 | no |
+| Qwen 8B | 4/5 | 4/5 | 2/3 | yes |
+| Qwen 32B | 5/5 | 5/5 | 3/3 | yes |
+
+Here we see the **gradient of capability** — not a binary.
+
+## Key insight for DH
+
+For many DH tasks, a 7--12B model may be **sufficient**:
+
+* topic classification
+* entity extraction
+* sentiment analysis
+* simple summarization
+
+Frontier-scale models are not needed for every task.
+
+## When larger models matter
+
+Larger models shine at:
+
+* Complex reasoning (multi-step extraction)
+* Long-context comprehension (full chapters)
+* Cross-lingual tasks (unseen languages)
+* Nuanced stylistic analysis
+* Few-shot learning with rare categories
+
+But this does not mean "bigger is always better."
+
+---
+
+# Quantization
+
+# What Is Quantization?
+
+## The analogy
+
+A library stores every measurement with full precision:
+
+```text
+3.14159265358979
+```
+
+Quantization rounds to a coarser grid:
+
+```text
+3.14
+```
+
+We **lose precision**.
+We **save space**.
+We **gain speed**.
+
+## How it works in practice
+
+LLM weights are normally stored as 16-bit floating point (FP16).
+
+Quantization reduces the bits:
+
+| Quantization | Bits per weight | Typical speedup | Quality loss |
+|----|----|----|----|
+| FP16 (full) | 16 | baseline | none |
+| Q8 | 8 | ~2x | minimal |
+| Q4 | 4 | ~4x | noticeable |
+
+## Live demo concept
+
+Load the same model in three quantizations:
+
+```bash
+ollama run qwen3:fp16    # full precision
+ollama run qwen3:q8      # 8-bit quantized
+ollama run qwen3:q4      # 4-bit quantized
+```
+
+Run the same prompt on each.
+
+## What students should notice
+
+| Aspect | FP16 | Q8 | Q4 |
+|----|----|----|----|
+| Disk size | 7.8 GB | 4.1 GB | 2.2 GB |
+| RAM needed | 16 GB | 8 GB | 4 GB |
+| Generation speed | baseline | ~2x | ~4x |
+| Output quality | perfect | near-perfect | slight degradation |
+
+## The DH methodological question
+
+> How much accuracy can we sacrifice before a classification study becomes unreliable?
+
+Quantization is not a technical detail.
+It is a **methodological choice** with consequences for reproducibility.
+
+## Quantization in practice
+
+For DH workflows:
+
+* Q8 is often the **sweet spot** — minimal quality loss, meaningful speedup
+* Q4 is acceptable for **exploratory** classification tasks
+* FP16 for **final publication** pipelines where quality matters
+
+---
+
+# Distilled Models
+
+# Distillation vs Quantization
+
+## The common confusion
+
+Students often conflate:
+
+* **Quantization** -- same model, fewer bits
+* **Distillation** -- smaller model trained to imitate a larger one
+
+These are fundamentally different.
+
+## Quantization
+
+Same model architecture.
+
+Fewer bits per weight.
+
+Analogy: compressing an image without changing its dimensions.
+
+## Distillation
+
+A completely new model.
+
+Trained to mimic a larger "teacher" model.
+
+Analogy: creating an abridged book that preserves the story.
+
+## How distillation works
+
+```
+Teacher model (large)
+       |
+       | produces "soft labels"
+       v
+Student model (small) ------- learns from those labels
+                               |
+                               tries to match teacher
+```
+
+The student learns not just "what the answer is"
+but **how confident** the teacher was.
+
+## Live comparison
+
+| Model | Params | Size | Speed | Quality |
+|----|----|----|----|----|
+| Qwen 32B (base) | 32B | 64 GB | slow | gold standard |
+| Distilled Qwen 8B | 8B | 16 GB | fast | near teacher |
+| Qwen 8B (not distilled) | 8B | 16 GB | fast | worse than distilled |
+
+The distilled model can **outperform** the non-distilled equivalent
+of the same size.
+
+## Why distillation matters for DH
+
+* Small models that are **better calibrated** for your task
+* Lower infrastructure requirements
+* Often sufficient for classification, NER, summarization
+* Reducing the gap between "what the best models do" and "what a researcher on a laptop can run"
+
+---
+
+# Model Evaluation
+
+# Benchmarking Models
+
+## Why benchmarking matters
+
+Many AI courses skip this.
+
+DH researchers cannot simply choose a model because it is popular.
+
+If you publish a study based on LLM annotations,
+**someone must be able to assess which model you used**
+and **whether it was appropriate**.
+
+## Mini benchmark exercise
+
+Tasks:
+
+| Task | Number of texts |
+|----|----|
+| Topic classification | 100 |
+| Information extraction | 100 |
+| Summarization | 20 |
+
+Compare on:
+
+| Model | Classification F1 | Extraction F1 | Summary coherence |
+|----|----|----|----|
+| Gemma 4B | ? | ? | ? |
+| Gemma 12B | ? | ? | ? |
+| Qwen 8B | ? | ? | ? |
+| Qwen 32B | ? | ? | ? |
+
+## Students begin to think scientifically
+
+Instead of:
+
+> Qwen felt better than Gemma for my project.
+
+They produce:
+
+| Model | Accuracy | Cohen kappa | F1 |
+|----|----|----|----|
+| Gemma 4B | 0.72 | 0.58 | 0.70 |
+| Qwen 8B | 0.84 | 0.81 | 0.83 |
+
+**Evidence-based model selection.**
+
+## Choosing a benchmark for your project
+
+| Research question | Recommended benchmark |
+|----|----|
+| Classify political discourse | 50 annotated speeches with human labels |
+| Extract entities from newspapers | 50 OCR'd newspaper articles with manual NER |
+| Summarize literary descriptions | 30 passages with human summaries |
+| Detect sentiment in reviews | 100 labeled reviews |
+
+Always use your **own data** — never a generic benchmark,
+only a subset of your corpus with human-annotated ground truth.
+
+# Context Windows
+
+## The false assumption
+
+> All models can read any amount of text.
+
+They cannot. Every model has a **context window limit**.
+
+## Context window sizes
+
+| Model | Context window |
+|----|----|
+| Gemma 4B | 8K tokens |
+| Qwen 8B | 32K tokens |
+| Qwen 32B | 128K tokens |
+| GPT-4o | 128K tokens |
+| Claude 3.5 Sonnet | 200K tokens |
+
+For DH projects involving novels, archives, or entire publications,
+this limit is **a real constraint**.
+
+## What happens beyond the limit?
+
+* The model **forgets** the beginning
+* Garbage-in produces **garbage-out**
+* There is **no warning message** -- it just silently ignores content
+
+## Practical implications for DH
+
+| Task | Reasonable context |
+|----|----|
+| Single article | 4K -- 8K |
+| Book chapter | 32K |
+| Novel excerpt | 128K |
+| Entire book | **No single call** -- chunk |
+| Archive collection | **Pipeline required** |
+
+Students learn: **you cannot just paste a 300-page book into a chat.**
+
+---
+
+# Model Cards
+
+# What Is a Model Card?
+
+## Reading a model card
+
+Every model on Hugging Face has a model card:
+
+> Who trained this? On what data? For which languages? What are its limitations?
+
+This is the **metadata** your DH research needs before selecting a model.
+
+## Key fields in a model card
+
+* **Training data** -- what was it trained on? (Wikipedia? Web? Books?)
+* **Languages** -- was it trained on your target language?
+* **Parameters** -- size of the model
+* **Intended use** -- what did the authors design it for?
+* **Limitations** -- what does it **not** do well?
+
+## The DH implication
+
+A model trained on **English Wikipedia** behaves differently
+from one trained on **multilingual literature**.
+
+If your research focuses on **non-English DH materials**, this is critical.
+
+## Model card as metadata analogy
+
+| Dataset concept | Model equivalent |
+|----|----|
+| Corpus provenance | **Training data** |
+| Encoding and format | **Tokenization approach** |
+| Coverage and gaps | **Language and domain coverage** |
+| Known biases | **Limitations section** |
+| Intended use | **Use cases section** |
+
+Every model has metadata. Every model has provenance concerns.
+**Always read the model card before using a model as a research instrument.**
+
+---
+
+# Practical Workflows
+
+# API Access
+
+## The automation shift
+
+Without API:
+
+```
+Human --> Chat Interface --> Model --> Output
+```
+
+With API:
+
+```
+Python --> Model --> Result --> Storage
+```
+
+This enables **batch processing** -- the real power of LLMs for DH.
+
+## Minimal API example
+
+```python
+from openai import OpenAI
+
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-4o-mini",
+    input="Classify: politics, economy, religion, science."
+)
+```
+
+The goal is **not coding proficiency**.
+The goal is understanding that automation is possible.
+
+# Batch Processing
+
+## Why DH researchers batch
+
+Manual annotation of 100 texts takes hours.
+
+Batch processing with an LLM takes minutes.
+
+## Simple batch loop
+
+```python
+results = []
+for text in corpus:
+    result = classify(text)
+    results.append(result)
+```
+
+Students immediately see the value:
+
+> I can process 10,000 documents instead of 10.
+
+## The methodological cost
+
+> With the same ease at which processing scales,
+> so does the risk of uncritical reliance on model output.
+
+Automation is powerful. **Evaluation remains essential.**
+
+---
+
+# Suggested DH Exercises
+
+# Exercise 1: Historical Newspapers
+
+## Task
+
+Extract from 50 newspaper articles:
+
+* persons
+* places
+* organizations
+
+## Compare
+
+| Model | Persons | Places | Organizations | JSON valid? |
+|----|----|----|----|----|
+| Gemma 4B | | | | |
+| Qwen 8B | | | | |
+| Qwen 32B | | | | |
+
+# Exercise 2: Political Speeches
+
+## Task
+
+Classify 50 speeches:
+
+* nationalism
+* economy
+* religion
+* culture
+
+## Compare
+
+| Aspect | Small model | Large model |
+|----|----|----|
+| Accuracy | | |
+| Speed | | |
+| Consistent categories? | | |
+
+# Exercise 3: Literary Texts
+
+## Task
+
+Generate summaries of 20 literary passages.
+
+## Evaluate
+
+Students manually assess:
+
+* Did the summary capture the main image/metaphor?
+* Did it preserve the tone?
+* Did it introduce factual errors?
+
+---
+
+# Suggested Readings
+
+## Essential
+
+1. **Ollama Documentation**
+   [ollama.com/docs](https://ollama.com/docs)
+   Especially: installation, model management, API usage.
+
+2. **Hugging Face Model Cards Guide**
+   [huggingface.co/docs/hub/model-cards](https://huggingface.co/docs/hub/model-cards)
+
+3. **LM Studio Documentation**
+   [lmstudio.ai/docs](https://lmstudio.ai/docs)
+   Conceptual explanations of model sizes and quantization.
+
+## Strongly Recommended
+
+4. **Unsloth Documentation**
+   [docs.unsloth.ai](https://docs.unsloth.ai)
+   Clearest explanations of quantization, VRAM, and model sizes.
+
+5. **Hugging Face Transformers Documentation**
+   [huggingface.co/docs/transformers](https://huggingface.co/docs/transformers)
+   Selected sections on model loading and configuration.
+
+## Optional Paper Readings
+
+6. **QLoRA: Efficient Fine-tuning of Quantized LLMs**
+   [arXiv:2305.14314](https://arxiv.org/abs/2305.14314)
+   Assign only introduction and figures.
+
+7. **Distilling Step-by-Step**
+   [arXiv:2305.02301](https://arxiv.org/abs/2305.02301)
+   Conceptual introduction to distillation.
+
+---
+
+# Summary
+
+## Key takeaways
+
+1. **Models are interchangeable research instruments** -- not monolithic services
+2. **Model selection is a methodological choice** -- like choosing a corpus or tool
+3. **Bigger isn't always better** -- trade-offs between accuracy, speed, and cost
+4. **Quantization is a methodological decision** -- not just a technical detail
+5. **Distilled models offer quality at lower cost** -- often worth the effort
+6. **Benchmark on your own data** -- never trust popularity as evidence
+7. **Every model needs metadata** -- always read the model card
+8. **Context windows are real constraints** -- know your model's limits
+
+## The one practical takeaway
+
+> Every student should leave this session having run:
+
+```bash
+ollama run gemma3
+ollama run qwen3
+```
+
+And compared their outputs on the same humanities task.
+
+Everything else -- quantization, APIs, benchmarking, model cards -- builds on
+what they **experienced** in that comparison.
+
+---
+
+# Thank you!
