@@ -821,6 +821,8 @@ p
 ![](img/neural_networks-001.png)
 
 
-# Thank you!
+#
+
+![](DigiTS-RGB-short-SMALL.svg)
 
 

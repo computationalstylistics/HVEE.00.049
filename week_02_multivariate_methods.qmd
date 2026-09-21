@@ -1,0 +1,361 @@
+---
+title: "Multivariate classification"
+subtitle: "Gentle Introduction to AI (HVEE.00.049) -- Week 01"
+author: 
+    name: Maciej Eder
+    affiliation: University of Tartu | Polish Academy of Sciences
+date: 2026/09/22
+format: 
+  revealjs:
+    theme: pp.scss
+    logo: DigiTS-RGB-short-SMALL.svg
+    css: big_logo_DigiTS.css
+    self_contained: false
+---
+
+
+
+```{r setup, include=FALSE}
+# set global chunk options
+library(knitr)
+
+my.blue = rgb(0.15, 0.45, 0.96)
+my.green = rgb(0.15, 0.85, 0.27, 0.7)
+my.red = rgb(0.92, 0.3, 0.3, 0.6)
+my.grey = rgb(0,0,0,.6)
+my.orange = rgb(1,0.5,0.2,0.6) 
+my.teal = rgb(0, 0.5, 0.5, 0.7)  #### or: my.teal = rgb(0.24, 0.65, 0.75, 0.7)
+my.violet = rgb(0.75, 0.25, 0.82, 0.7)
+
+my.p.blue = "rgba(38, 115, 245, 0.7)"
+my.p.green = "rgba(38, 217,  69, 0.7)"
+my.p.red = "rgba(235, 77, 77, 0.6)"
+my.p.grey = "rgba(0, 0, 0, 0.6)"
+my.p.orange = "rgba(255, 128, 51, 0.6)"
+my.p.teal = "rgba(0, 128, 128, 0.7)"
+my.p.violet = "rgba(190, 64, 210, 0.7)"
+
+opts_chunk$set(cache=FALSE)
+```
+
+# recap
+
+## the concepts introduced so far
+
+- variable (feature)
+- model
+- linear regression
+- logistic regression
+- prediction
+- (binary) classification
+
+
+## simple dataset
+
+```{r}
+set.seed(4321)
+n <- 200
+hours <- runif(n, 0, 20)
+prob_pass <- 1 / (1 + exp(-(-4.8 + 0.65 * hours)))
+passed <- rbinom(n, size = 1, prob = prob_pass)
+df <- data.frame(Hours = round(hours, 1), Passed = passed)
+df[1:50,]
+```
+
+
+## dataset plotted
+
+```{r}
+plot(df$Hours, df$Passed, ylab = "probability of passing", xlab = "effort")
+```
+
+## clearly two classes
+
+```{r}
+colors = df[,2]
+colors[colors == 1] = my.green
+colors[colors == 0] = my.red
+plot(df$Hours, df$Passed, col = colors, ylab = "probability of passing", xlab = "effort")
+```
+
+
+## logistic regression model
+
+```{r}
+model <- glm(Passed ~ Hours, data = df, family = binomial(link = "logit"))
+plot(df$Hours, df$Passed, col = colors, ylab = "probability of passing", xlab = "effort")
+lines(sort(df$Hours), predict(model, newdata=data.frame(Hours = sort(df$Hours)), type = "response"), col = "blue", lwd = 2)
+```
+
+
+## the decision line
+
+```{r}
+model <- glm(Passed ~ Hours, data = df, family = binomial(link = "logit"))
+plot(df$Hours, df$Passed, col = colors, ylab = "probability of passing", xlab = "effort")
+lines(sort(df$Hours), predict(model, newdata=data.frame(Hours = sort(df$Hours)), type = "response"), col = "blue", lwd = 2)
+x0 <- -coef(model)[1]/coef(model)[2]
+points(x0, 0.5, pch = 20, cex = 3)
+abline(v = x0, lty = 2)
+text(9, 0.5, labels= round(x0, 4))
+```
+
+
+## binary classification
+
+- spam --- no-spam
+- fake news --- genuine fact
+- pass --- fail
+- tsunami --- no danger
+- enemy (target) --- ally (don't shoot)
+- human --- vampire
+- will break --- won't break
+- original Shakespeare --- false attribution
+
+
+
+# authorship attribution
+
+
+
+## non-traditional authorship attribution
+
+Given:
+
+* a text of uncertain or anonymous authorship, and
+* a comparison corpus of texts by known authors,
+
+is it possible to find the **'nearest neighbor'**
+among the available candidates?
+
+
+## authorial fingerprint
+
+- an idea of stylistic fingerprint:
+    - undiscoverable with the naked eye
+    - beyond authorial control
+    - resistant to imitation, plagiarism and parody
+    - popular solution: frequencies of the Most Frequent Words
+- is the style _determined_ by an individual? (cf. human DNA code, fingerprint, or patterns in one’s iris)
+
+
+## example: _Prometheus Bound_
+
+* Aeschylus known for his 7 tragedies
+* _Prometheus Bound_ somewhat odd, and thus disputed
+* Traditional arguments against Aeschylus' authorship
+    * Zeus depicted as a cruel tyrant
+    * slightly different versification patterns
+    * the third actor needed in one of the scenes
+
+
+
+
+## stylometry: where it (usually) begins
+
+```{r, echo = FALSE, message = FALSE}
+library(stylo)
+load("R_datasets/greek_drama_freqs.RData")
+round(greek_drama[1:19,1:10], 3)
+```
+
+
+
+
+## table of computed distances
+
+```{r, echo = FALSE, message = FALSE}
+round(as.matrix(dist.delta(greek_drama)), 4)[1:19,1:5]
+```
+
+
+
+## hierarchical cluster analysis
+
+```{r, echo = FALSE, message = FALSE, fig.align = "center"}
+stylo(frequencies = greek_drama, gui = FALSE, titles.on.graphs = FALSE)
+```
+
+
+
+## multidimensional scaling
+
+```{r, echo = FALSE, message = FALSE, fig.align = "center"}
+stylo(frequencies = greek_drama, gui = FALSE, analysis.type = "MDS", titles.on.graphs = FALSE)
+```
+
+
+
+## bootstrap consensus tree
+
+```{r, echo = FALSE, message = FALSE, fig.align = "center"}
+stylo(frequencies = greek_drama, gui = FALSE, analysis.type = "BCT", mfw.min = 100, mfw.max = 1000, titles.on.graphs = FALSE)
+```
+
+
+
+
+
+# one variable vs. many
+
+
+
+## simple logistic regression
+
+```{r}
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = LR]
+
+  node [shape = rectangle, style = filled, fontname = Helvetica]
+
+  input_data [label = 'input\\ndata', fillcolor = Beige, width = 1]
+  choice     [label = '🤔', fillcolor = LightYellow, width = 0.5]
+  feature_1  [label = 'chosen\\nvariable', fillcolor = LightBlue, width = 0.5]
+  classifier [label = 'classifier', fillcolor = LightYellow, width = 1, height = 2]
+  yes_node   [label = 'yes', fillcolor = PaleGreen, width = 0.5]
+  no_node    [label = 'no', fillcolor = MistyRose, width = 0.5]
+
+  input_data -> choice
+  choice     -> feature_1
+  feature_1  -> classifier
+  classifier -> yes_node
+  classifier -> no_node
+
+}")
+```
+
+## multivariate methods
+
+```{r}
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = LR]
+
+  node [shape = rectangle, style = filled, fontname = Helvetica]
+
+  input_data [label = 'input\\ndata', fillcolor = Beige, width = 1]
+  choice     [label = '🤔', fillcolor = LightYellow, width = 0.5]
+  feature_1  [label = 'var 1', fillcolor = LightBlue, width = 0.5]
+  feature_2  [label = 'var 2', fillcolor = LightBlue, width = 0.5]
+  feature_3  [label = '. . .', fillcolor = LightBlue, width = 0.5]
+  feature_n  [label = 'var n', fillcolor = LightBlue, width = 0.5]
+  classifier [label = 'classifier', fillcolor = LightYellow, width = 1, height = 2]
+  yes_node   [label = 'yes', fillcolor = PaleGreen, width = 0.5]
+  no_node    [label = 'no', fillcolor = MistyRose, width = 0.5]
+
+  input_data -> choice
+  choice     -> feature_1
+  choice     -> feature_2
+  choice     -> feature_3
+  choice     -> feature_n
+  feature_1  -> classifier
+  feature_2  -> classifier
+  feature_3  -> classifier
+  feature_n  -> classifier
+  classifier -> yes_node
+  classifier -> no_node
+
+}")
+```
+
+
+
+## sentiment analysis
+
+```{r}
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = LR]
+
+  node [shape = rectangle, style = filled, fontname = Helvetica]
+
+  input_data [label = 'input\\ntext', fillcolor = Beige, width = 1]
+  choice     [label = '🤔', fillcolor = LightYellow, width = 0.5]
+  feature_1  [label = 'charming', fillcolor = LightBlue, width = 0.5]
+  feature_2  [label = 'awesome', fillcolor = LightBlue, width = 0.5]
+  feature_3  [label = 'terrible', fillcolor = LightBlue, width = 0.5]
+  feature_n  [label = '. . .', fillcolor = LightBlue, width = 0.5]
+  classifier [label = 'classifier', fillcolor = LightYellow, width = 1, height = 2]
+  yes_node   [label = 'positive', fillcolor = PaleGreen, width = 0.5]
+  no_node    [label = 'negative', fillcolor = MistyRose, width = 0.5]
+
+  input_data -> choice
+  choice     -> feature_1
+  choice     -> feature_2
+  choice     -> feature_3
+  choice     -> feature_n
+  feature_1  -> classifier
+  feature_2  -> classifier
+  feature_3  -> classifier
+  feature_n  -> classifier
+  classifier -> yes_node
+  classifier -> no_node
+
+}")
+```
+
+
+## authorial recognition
+
+```{r}
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = LR]
+
+  node [shape = rectangle, style = filled, fontname = Helvetica]
+
+  input_data [label = 'input\\ndata', fillcolor = Beige, width = 1]
+  choice     [label = '🤔', fillcolor = LightYellow, width = 0.5]
+  feature_1  [label = 'the', fillcolor = LightBlue, width = 0.5]
+  feature_2  [label = 'of', fillcolor = LightBlue, width = 0.5]
+  feature_3  [label = 'in', fillcolor = LightBlue, width = 0.5]
+  feature_n  [label = '. . .', fillcolor = LightBlue, width = 0.5]
+  classifier [label = 'classifier', fillcolor = LightYellow, width = 1, height = 2]
+  M_node   [label = 'Milton', fillcolor = MistyRose, width = 0.5]
+  C_node    [label = 'Chaucer', fillcolor = PaleGreen, width = 0.5]
+  S_node   [label = 'Shakespeare', fillcolor = MistyRose, width = 0.5]
+  J_node   [label = 'Johnson', fillcolor = MistyRose, width = 0.5]
+
+  input_data -> choice
+  choice     -> feature_1
+  choice     -> feature_2
+  choice     -> feature_3
+  choice     -> feature_n
+  feature_1  -> classifier
+  feature_2  -> classifier
+  feature_3  -> classifier
+  feature_n  -> classifier
+  classifier -> M_node
+  classifier -> C_node
+  classifier -> S_node
+  classifier -> J_node
+
+}")
+```
+
+
+
+## structured data: literary texts
+
+
+```{r, echo = FALSE, message = FALSE}
+library(stylo)
+data(galbraith)
+data(lee)
+round(galbraith[1:19,1:8], 3)
+```
+
+## structured data: iris
+
+```{r}
+iris
+```
+
+## classification methods
+
+- the concept of multidimensionality & distances: [presentation](https://computationalstylistics.github.io/presentations/distances_intro/)
+- crush intro to supervised classification (presentation in PDF)
+
+
+#
+
+![](DigiTS-RGB-short-SMALL.svg)
+
+

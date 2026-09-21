@@ -1,0 +1,9 @@
+
+# Mac system files
+.DS_Store
+
+# vim tmp files
+*.swp
+
+*.Rhistory
+
